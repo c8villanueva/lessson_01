@@ -22,7 +22,7 @@ const createNewUser = asyncHandler(async (req, res) => {
   const {username, password, roles } = req.body
 
   // Confirm data
-  if (!username || !password || !Array.isArray(roles) || !roles.length) {
+  if (!username || !password) {
     return res.status(400).json({ message: 'All fields are required' })
   } // if there are any other errors, the async handler should ba able to take care of it, this is mainly so that the specific message can be given on the frontend to actually help the user
 
@@ -35,7 +35,9 @@ const createNewUser = asyncHandler(async (req, res) => {
   // Hash password
   const hashedPwd = await bcrypt.hash(password, 10) // salt rounds
   
-  const userObject = { username, "password": hashedPwd, roles}
+  const userObject = (!Array.isArray(roles) || !roles.length)
+    ? { username, "password": hashedPwd }
+    : { username, "password": hashedPwd, roles }
 
   // Create and store new user
   const user = await User.create(userObject)
@@ -67,6 +69,7 @@ const updateUser = asyncHandler(async (req, res) => {
 
   // Check for duplicate 
   const duplicate = await User.findOne({ username }).lean().exec()
+  // checks for case insensitivity
 
   // Allow updates to the original user 
   if (duplicate && duplicate?._id.toString() !== id) {
